@@ -11,6 +11,9 @@ import os
 solver='gurobi'
 SOLVER=pyo.SolverFactory(solver)
 
+SOLVER.options['Threads'] = 1  # Limit to 1 thread
+SOLVER.options['TimeLimit'] = 2  # Set a time limit of 600 seconds
+
 assert SOLVER.available(), f"Solver {solver} is available."
 
 # CONSTANTS
@@ -204,7 +207,7 @@ class deterministic_setting_1(pyo.ConcreteModel):
         for t in range(T):
             # q_da, q_rt constraint
             model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t])
-            model.constrs.add(model.q_rt[t] <= 1.1*self.E_1[t])
+            model.constrs.add(model.q_rt[t] <= 1.1*self.E_1[t] + S_max - S_min)
             
             # Demand response
             model.constrs.add(model.b_da[t] - self.P_da[t] <= M * (1-model.y_da[t]))
@@ -222,11 +225,9 @@ class deterministic_setting_1(pyo.ConcreteModel):
             
             # ESS operation
             model.constrs.add(model.S[t+1] == model.S[t] + v*model.c[t] - (model.d[t])/v)
-            model.constrs.add(model.u[t] == model.g[t] + model.d[t] - model.c[t])
+            model.constrs.add(model.u[t] == model.g[t] + (model.d[t])/v - v*model.c[t])
             model.constrs.add(model.g[t] <= self.E_1[t])
             model.constrs.add(model.c[t] <= model.g[t])
-            model.constrs.add(model.c[t]<=M*model.y_S[t])
-            model.constrs.add(model.d[t]<=M*(1-model.y_S[t]))
             model.constrs.add(model.S[0] == S_max)
             model.constrs.add(model.S[24] == S_max)
             
@@ -309,10 +310,13 @@ class deterministic_setting_1(pyo.ConcreteModel):
         print(f"\noptimal value = {pyo.value(self.objective)}")
             
     def objective_value(self):
-        self.solve()
+        if not self.solved:
+            self.solve()
+            self.solved = True
+            
         return pyo.value(self.objective)
     
-    def solve_with_fixed_vars(self, b_da_values, b_rt_values, q_da_values):
+    def solve_with_fixed_vars(self, b_da_values, b_rt_values, q_da_values, q_rt_values, g_values, c_values, d_values, u_values):
         
         self.build_model()   
         model = self.model()
@@ -321,13 +325,19 @@ class deterministic_setting_1(pyo.ConcreteModel):
             model.b_da[t].fix(b_da_values[t])
             model.b_rt[t].fix(b_rt_values[t])
             model.q_da[t].fix(q_da_values[t])
-        
+            model.q_rt[t].fix(q_rt_values[t])
+            model.g[t].fix(g_values[t])
+            model.c[t].fix(c_values[t])
+            model.d[t].fix(d_values[t])
+            model.u[t].fix(u_values[t])
+                                    
         self.solve()
         
         for t in range(T):
             model.b_da[t].unfix()
             model.b_rt[t].unfix()
             model.q_da[t].unfix()
+            model.q_rt[t].unfix()
     
         
         return self.objective_value()
@@ -432,13 +442,11 @@ class deterministic_setting_2(pyo.ConcreteModel):
             
             # ESS operation
             model.constrs.add(model.S[t+1] == model.S[t] + v*model.c[t] - (model.d[t])/v)
-            model.constrs.add(model.z[t] == model.g[t] + model.d[t] - model.c[t])
+            model.constrs.add(model.z[t] == model.g[t] + (model.d[t])/v - v*model.c[t])
             model.constrs.add(model.g[t] <= self.E_1[t])
             model.constrs.add(model.c[t] <= model.g[t])
             model.constrs.add(model.S[0] == S_max)
             model.constrs.add(model.S[24] == S_max)
-            model.constrs.add(model.c[t]<=M*model.y_S[t])
-            model.constrs.add(model.d[t]<=M*(1-model.y_S[t]))
             
             #f_V constraint
             model.constrs.add(model.S1_V[t] == model.b_rt[t] * model.z[t] - model.Q_da[t] * self.P_da[t] - model.z[t] * self.P_rt[t] + self.P_rt[t] * model.Q_da[t])
@@ -525,7 +533,8 @@ class deterministic_setting_2(pyo.ConcreteModel):
 
 r = range(len(scenarios)-69)
 Tr = range(T)
-"""
+
+
 b_da_list = []
 b_rt_list = []
 q_da_list = []
@@ -534,7 +543,6 @@ g_list = []
 c_list = []
 d_list = []
 z_list = []
-S_list = []
 
 for n in r:
     det = deterministic_setting_2(n)
@@ -547,8 +555,7 @@ for n in r:
     c_list.append(det.c_values)
     d_list.append(det.d_values)
     z_list.append(det.z_values)
-    S_list.append(det.S_values)
-"""
+
 
 
 """
@@ -570,15 +577,18 @@ plt.show()
 d1_obj = []
 d2_obj = []
 difference = []
-"""
+
+
 for n in r:
-    d1 =deterministic_setting_1(n)
-    d2 = deterministic_setting_2(n)
-    d1_obj.append(d1.solve_with_fixed_vars(
-        b_da_list[n], b_rt_list[n], q_da_list[n]
-    ))
-    d2_obj.append(d2.objective_value())
-    difference.append(abs(d1.objective_value()-d2.objective_value()))
+    d1 = deterministic_setting_1(n)
+    d1_1 = deterministic_setting_1(n)
+    d1_o = d1.objective_value()
+    d2 = d1_1.solve_with_fixed_vars(
+        b_da_list[n], b_rt_list[n], q_da_list[n], u_list[n], g_list[n], c_list[n], d_list[n], z_list[n]
+    )
+    d1_obj.append(d1_o)
+    d2_obj.append(d2)
+    difference.append(abs(d1_o-d2))
 
 plt.plot(r, d1_obj, label='Original')
 plt.plot(r, d2_obj, label='Approximation')
@@ -594,8 +604,10 @@ plt.legend()
 
 plt.show()
 
-"""
+print(difference)
 
+
+"""
 for n in r:
     d1 =deterministic_setting_1(n)
     d2 = deterministic_setting_2(n)
@@ -616,6 +628,7 @@ plt.ylim(0, 1000000)
 plt.legend()
 
 plt.show()
+"""
 
 
 
