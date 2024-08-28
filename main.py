@@ -11,9 +11,6 @@ import os
 solver='gurobi'
 SOLVER=pyo.SolverFactory(solver)
 
-SOLVER.options['Threads'] = 1  # Limit to 1 thread
-SOLVER.options['TimeLimit'] = 2  # Set a time limit of 600 seconds
-
 assert SOLVER.available(), f"Solver {solver} is available."
 
 # CONSTANTS
@@ -83,9 +80,9 @@ for i in average_forecast:
 # Other Params
 
 C = 560
-S = 168
-S_min = 16.8
-S_max = 151.2
+S = 1680
+S_min = 168
+S_max = 1512
 P_r = 80
 M = 10**6
 T = 24
@@ -206,7 +203,7 @@ class deterministic_setting_1(pyo.ConcreteModel):
     
         for t in range(T):
             # q_da, q_rt constraint
-            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t])
+            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t] + S_max - S_min)
             model.constrs.add(model.q_rt[t] <= 1.1*self.E_1[t] + S_max - S_min)
             
             # Demand response
@@ -299,8 +296,8 @@ class deterministic_setting_1(pyo.ConcreteModel):
 
     def solve(self):
         self.build_model()
-        print(f"problem{n} solving")
         SOLVER.solve(self)
+        print(f"problem{n} solved")
         self.solved = True
         
     def report(self):
@@ -424,7 +421,7 @@ class deterministic_setting_2(pyo.ConcreteModel):
     
         for t in range(T):
             # q_da, q_rt constraint
-            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t])
+            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t] + S_max - S_min)
             
             # Demand Response
             model.constrs.add(model.b_da[t] - self.P_da[t] <= M * (1-model.y_da[t]))
@@ -531,9 +528,12 @@ class deterministic_setting_2(pyo.ConcreteModel):
             
         return pyo.value(self.objective)
 
-r = range(len(scenarios)-69)
+## Results
+
+r = range(len(scenarios)-75)
 Tr = range(T)
 
+## Optimal Solutions of Deterministic Setting 2
 
 b_da_list = []
 b_rt_list = []
@@ -543,9 +543,11 @@ g_list = []
 c_list = []
 d_list = []
 z_list = []
+S_list = []
 
 for n in r:
     det = deterministic_setting_2(n)
+    det.solve()
     det.optimal_solutions()
     b_da_list.append(det.b_da_values)
     b_rt_list.append(det.b_rt_values)
@@ -555,10 +557,35 @@ for n in r:
     c_list.append(det.c_values)
     d_list.append(det.d_values)
     z_list.append(det.z_values)
-
-
-
+    S_list.append(det.S_values)
+    
 """
+for n in r:
+    plt.plot(Tr, b_da_list[n])
+    
+plt.xlabel('Time')
+plt.ylabel('b_da values')
+plt.title('b_da')
+
+plt.ylim(-110, 20)
+
+plt.legend()
+
+plt.show()
+
+for n in r:
+    plt.plot(Tr, b_rt_list[n])
+    
+plt.xlabel('Time')
+plt.ylabel('b_rt values')
+plt.title('b_rt')
+
+plt.ylim(-110, 20)
+
+plt.legend()
+
+plt.show()
+
 for n in r:
     plt.plot(Tr, q_da_list[n])
     
@@ -566,13 +593,28 @@ plt.xlabel('Time')
 plt.ylabel('q_da values')
 plt.title('q_da')
 
-plt.ylim(0, 300)
+plt.ylim(0, 2000)
+
+plt.legend()
+
+plt.show()
+
+for n in r:
+    plt.plot(Tr, S_list[n])
+    
+plt.xlabel('Time')
+plt.ylabel('S values')
+plt.title('S')
+
+plt.ylim(0, 2000)
 
 plt.legend()
 
 plt.show()
 
 """
+
+## Optimal Value Comparison 
 
 d1_obj = []
 d2_obj = []
@@ -598,7 +640,7 @@ plt.xlabel('Scenario Index')
 plt.ylabel('Values')
 plt.title('Comparison of Deterministic Settings')
 
-plt.ylim(0, 1000000)
+plt.ylim(0, 10000000)
 
 plt.legend()
 
@@ -606,10 +648,9 @@ plt.show()
 
 print(difference)
 
-
 """
 for n in r:
-    d1 =deterministic_setting_1(n)
+    d1 = deterministic_setting_1(n)
     d2 = deterministic_setting_2(n)
     d1_obj.append(d1.objective_value())
     d2_obj.append(d2.objective_value())
@@ -623,12 +664,10 @@ plt.xlabel('Scenario Index')
 plt.ylabel('Values')
 plt.title('Comparison of Deterministic Settings')
 
-plt.ylim(0, 1000000)
+plt.ylim(0, 10000000)
 
 plt.legend()
 
 plt.show()
+
 """
-
-
-
