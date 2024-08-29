@@ -116,7 +116,6 @@ for n in range(len(real_time_prices)):
     scenarios.append(s) 
     
 
-
 class deterministic_setting_1(pyo.ConcreteModel):
     def __init__ (self, n):
         super().__init__("Deterministic_Setting1")
@@ -530,7 +529,7 @@ class deterministic_setting_2(pyo.ConcreteModel):
 
 ## Results
 
-r = range(len(scenarios)-75)
+r = range(len(scenarios))
 Tr = range(T)
 
 ## Optimal Solutions of Deterministic Setting 2
@@ -544,6 +543,16 @@ c_list = []
 d_list = []
 z_list = []
 S_list = []
+a = 0
+b = 0
+c = 0
+
+## Detect abnormal scenarios
+
+
+anormal_scenarios_b_da = []
+anormal_scenarios_b_rt = []
+anormal_scenarios_q_da = []
 
 for n in r:
     det = deterministic_setting_2(n)
@@ -558,7 +567,83 @@ for n in r:
     d_list.append(det.d_values)
     z_list.append(det.z_values)
     S_list.append(det.S_values)
+    for i in det.b_da_values:
+        if i >= -P_r+1:    
+            a += 1
+    if a != 0:
+        anormal_scenarios_b_da.append(n)
+    a=0
+    for i in det.b_rt_values:
+        if i >= -P_r+1:    
+            b += 1
+    if b != 0:
+        anormal_scenarios_b_rt.append(n)
+    b=0
+    for t, i in enumerate(det.q_da_values):
+        if i <= E_0_mean[t] + S_max - S_min - 10:    
+            c += 1
+    if c != 0:
+        anormal_scenarios_q_da.append(n)
+    c=0
+
+
+for n in [34, 42, 84]:
+    plt.plot(Tr, b_da_list[n], label = f"scenario{n}")
+plt.xlabel('Time')
+plt.ylabel('b_da values')
+plt.title('b_da')
+plt.ylim(-110, 20)
+plt.legend()
+plt.show()
+
+for n in [34, 42, 84]:
+    plt.plot(Tr, b_rt_list[n], label = f"scenario{n}")
+plt.xlabel('Time')
+plt.ylabel('b_rt values')
+plt.title('b_rt')
+plt.ylim(-110, 20)
+plt.legend()
+plt.show()
+
+for n in [34, 42, 84]:
+    plt.plot(Tr, q_da_list[n], label = f"scenario{n}")
     
+plt.xlabel('Time')
+plt.ylabel('q_da values')
+plt.title('q_da')
+plt.ylim(0, 2000)
+plt.legend()
+plt.show()
+
+for n in [34, 42, 84]:
+    plt.plot(Tr, scenarios[n][0])
+plt.xlabel('Time')
+plt.ylabel('DA_Prices')
+plt.title('DA_Prices')
+plt.ylim(-110, 300)
+plt.legend()
+plt.show()
+
+for n in [34, 42, 84]:
+    plt.plot(Tr, scenarios[n][1])
+plt.xlabel('Time')
+plt.ylabel('RT_Prices')
+plt.title('RT_Prices')
+plt.ylim(-110, 300)
+plt.legend()
+plt.show()
+
+for n in [34, 42, 84]:
+    plt.plot(Tr, scenarios[n][4])
+plt.xlabel('Time')
+plt.ylabel('U')
+plt.title('U')
+plt.ylim(0, 2)
+plt.legend()
+plt.show()
+
+
+
 """
 for n in r:
     plt.plot(Tr, b_da_list[n])
@@ -566,11 +651,8 @@ for n in r:
 plt.xlabel('Time')
 plt.ylabel('b_da values')
 plt.title('b_da')
-
 plt.ylim(-110, 20)
-
 plt.legend()
-
 plt.show()
 
 for n in r:
@@ -579,11 +661,8 @@ for n in r:
 plt.xlabel('Time')
 plt.ylabel('b_rt values')
 plt.title('b_rt')
-
 plt.ylim(-110, 20)
-
 plt.legend()
-
 plt.show()
 
 for n in r:
@@ -592,11 +671,8 @@ for n in r:
 plt.xlabel('Time')
 plt.ylabel('q_da values')
 plt.title('q_da')
-
 plt.ylim(0, 2000)
-
 plt.legend()
-
 plt.show()
 
 for n in r:
@@ -605,17 +681,14 @@ for n in r:
 plt.xlabel('Time')
 plt.ylabel('S values')
 plt.title('S')
-
 plt.ylim(0, 2000)
-
 plt.legend()
-
 plt.show()
 
 """
 
 ## Optimal Value Comparison 
-
+"""
 d1_obj = []
 d2_obj = []
 difference = []
@@ -641,14 +714,12 @@ plt.ylabel('Values')
 plt.title('Comparison of Deterministic Settings')
 
 plt.ylim(0, 10000000)
-
 plt.legend()
-
 plt.show()
 
 print(difference)
 
-"""
+
 for n in r:
     d1 = deterministic_setting_1(n)
     d2 = deterministic_setting_2(n)
@@ -659,15 +730,11 @@ for n in r:
 plt.plot(r, d1_obj, label='Original')
 plt.plot(r, d2_obj, label='Approximation')
 plt.plot(r, difference, label='Abs difference')
-
 plt.xlabel('Scenario Index')
 plt.ylabel('Values')
 plt.title('Comparison of Deterministic Settings')
-
 plt.ylim(0, 10000000)
-
 plt.legend()
-
 plt.show()
 
 """
