@@ -22,7 +22,7 @@ directory_path_da = '.\모의 실시간시장 가격\하루전'
 files = os.listdir(directory_path_da)
 csv_files = [file for file in files if file.endswith('.csv')]
 
-def process_file(file_path):
+def process_da_file(file_path):
     df = pd.read_csv(file_path)
     data = df.loc[3:27, df.columns[2]]  
     return data.tolist()
@@ -32,19 +32,19 @@ day_ahead_prices = []
 
 for csv_file in csv_files:
     file_path = os.path.join(directory_path_da, csv_file)
-    processed_data = process_file(file_path)
+    processed_data = process_da_file(file_path)
     day_ahead_prices.append(processed_data)
 
 
 # Real-Time price
 
-directory_path_rt = '.\모의 실시간시장 가격\실시간 확정'
+directory_path_rt = '.\모의 실시간시장 가격\실시간 임시'
 
 files_rt = os.listdir(directory_path_rt)
 
 csv_files_rt = [file for file in files_rt if file.endswith('.csv')]
 
-def process_file(file_path):
+def process_rt_file(file_path):
 
     df = pd.read_csv(file_path)
     data = df.iloc[3:99, 2]  
@@ -55,7 +55,7 @@ real_time_prices = []
 
 for xlsx_file in csv_files_rt:
     file_path = os.path.join(directory_path_rt, xlsx_file)
-    processed_data = process_file(file_path)
+    processed_data = process_rt_file(file_path)
     real_time_prices.append(processed_data)
 
 
@@ -102,7 +102,7 @@ def generate_scenario(n):
     Un=np.random.uniform(0, 1, T)
     for t in range(T):
         P_da.append(day_ahead_prices[n][t])
-        P_rt.append(day_ahead_prices[n][t])
+        P_rt.append(real_time_prices[n][t])
         E_0.append(E_0_mean[t])
         E_1.append(E_0[t] * np.random.uniform(0.9, 1.1))
         U.append(I[t]*Un[t])
@@ -527,6 +527,7 @@ class deterministic_setting_2(pyo.ConcreteModel):
             
         return pyo.value(self.objective)
 
+
 ## Results
 
 r = range(len(scenarios))
@@ -547,8 +548,7 @@ a = 0
 b = 0
 c = 0
 
-## Detect abnormal scenarios
-
+## Det2 optimal solutions
 
 anormal_scenarios_b_da = []
 anormal_scenarios_b_rt = []
@@ -587,7 +587,9 @@ for n in r:
     c=0
 
 
-for n in [34, 42, 84]:
+
+"""
+for n in anormal_scenarios_b_da:
     plt.plot(Tr, b_da_list[n], label = f"scenario{n}")
 plt.xlabel('Time')
 plt.ylabel('b_da values')
@@ -596,7 +598,7 @@ plt.ylim(-110, 20)
 plt.legend()
 plt.show()
 
-for n in [34, 42, 84]:
+for n in anormal_scenarios_b_rt:
     plt.plot(Tr, b_rt_list[n], label = f"scenario{n}")
 plt.xlabel('Time')
 plt.ylabel('b_rt values')
@@ -605,7 +607,7 @@ plt.ylim(-110, 20)
 plt.legend()
 plt.show()
 
-for n in [34, 42, 84]:
+for n in anormal_scenarios_q_da:
     plt.plot(Tr, q_da_list[n], label = f"scenario{n}")
     
 plt.xlabel('Time')
@@ -615,8 +617,11 @@ plt.ylim(0, 2000)
 plt.legend()
 plt.show()
 
-for n in [34, 42, 84]:
-    plt.plot(Tr, scenarios[n][0])
+"""
+
+
+for n in [84]:
+    plt.plot(Tr, scenarios[n][0], label = f"scenario{n}")
 plt.xlabel('Time')
 plt.ylabel('DA_Prices')
 plt.title('DA_Prices')
@@ -624,8 +629,8 @@ plt.ylim(-110, 300)
 plt.legend()
 plt.show()
 
-for n in [34, 42, 84]:
-    plt.plot(Tr, scenarios[n][1])
+for n in [84]:
+    plt.plot(Tr, scenarios[n][1], label = f"scenario{n}")
 plt.xlabel('Time')
 plt.ylabel('RT_Prices')
 plt.title('RT_Prices')
@@ -633,8 +638,8 @@ plt.ylim(-110, 300)
 plt.legend()
 plt.show()
 
-for n in [34, 42, 84]:
-    plt.plot(Tr, scenarios[n][4])
+for n in [84]:
+    plt.plot(Tr, scenarios[n][4], label = f"scenario{n}")
 plt.xlabel('Time')
 plt.ylabel('U')
 plt.title('U')
@@ -684,16 +689,15 @@ plt.title('S')
 plt.ylim(0, 2000)
 plt.legend()
 plt.show()
-
 """
 
 ## Optimal Value Comparison 
-"""
+
 d1_obj = []
 d2_obj = []
 difference = []
 
-
+"""
 for n in r:
     d1 = deterministic_setting_1(n)
     d1_1 = deterministic_setting_1(n)
@@ -717,6 +721,8 @@ plt.ylim(0, 10000000)
 plt.legend()
 plt.show()
 
+
+
 print(difference)
 
 
@@ -738,3 +744,4 @@ plt.legend()
 plt.show()
 
 """
+
