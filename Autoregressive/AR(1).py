@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-
 import pandas as pd
 import numpy as np
 from statsmodels.tsa.ar_model import AutoReg
@@ -21,7 +17,7 @@ data.set_index('timestamp')
 
 m_t = data['forecast_rt']/data['forecast_da']
 
-reshaped_array = m_t.values.reshape(230, 13)
+reshaped_array = m_t.values.reshape(230, 11)
 
 # AR(1) Test
 
@@ -38,8 +34,8 @@ for i in range(len(reshaped_array)):
     # Get the residuals
     residuals = model.resid
 
-    # Perform the Ljung-Box test (lags=12 for 12 residual autocorrelations)
-    ljung_box_result = acorr_ljungbox(residuals, lags=[12], return_df=True)
+    # Perform the Ljung-Box test (lags=11 for 11 residual autocorrelations)
+    ljung_box_result = acorr_ljungbox(residuals, lags=[10], return_df=True)
 
     p_value = ljung_box_result['lb_pvalue'].iloc[0]
 
