@@ -81,6 +81,7 @@ for i in average_forecast:
 
 C = 560
 S = 1680
+B = 560
 S_min = 168
 S_max = 1512
 P_r = 80
@@ -147,8 +148,8 @@ class deterministic_setting_1(pyo.ConcreteModel):
         model.b_rt = pyo.Var(model.TIME, bounds=(-P_r, 0), domain=pyo.Reals)
         model.q_rt = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
         model.g = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
-        model.c = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
-        model.d = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
+        model.c = pyo.Var(model.TIME, bounds=(0, B), domain=pyo.NonNegativeReals)
+        model.d = pyo.Var(model.TIME, bounds=(0, B), domain=pyo.NonNegativeReals)
         model.u = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
         
         model.S = pyo.Var(model.ESSTIME, bounds=(S_min, S_max), domain=pyo.Reals) 
@@ -338,7 +339,6 @@ class deterministic_setting_1(pyo.ConcreteModel):
         
         return self.objective_value()
 
-
 class deterministic_setting_2(pyo.ConcreteModel):
     def __init__ (self, n):
         super().__init__("Deterministic_Setting2")
@@ -373,8 +373,8 @@ class deterministic_setting_2(pyo.ConcreteModel):
         model.q_da = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
         model.b_rt = pyo.Var(model.TIME, bounds=(-P_r, 0), domain=pyo.Reals)
         model.g = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
-        model.c = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
-        model.d = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
+        model.c = pyo.Var(model.TIME, bounds=(0, B), domain=pyo.NonNegativeReals)
+        model.d = pyo.Var(model.TIME, bounds=(0, B), domain=pyo.NonNegativeReals)
         model.u = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
         model.z = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
         
@@ -441,8 +441,8 @@ class deterministic_setting_2(pyo.ConcreteModel):
             model.constrs.add(model.z[t] == model.g[t] + (model.d[t])/v - v*model.c[t])
             model.constrs.add(model.g[t] <= self.E_1[t])
             model.constrs.add(model.c[t] <= model.g[t])
-            model.constrs.add(model.S[0] == S_max)
-            model.constrs.add(model.S[24] == S_max)
+            model.constrs.add(model.S[0] == S_min)
+            model.constrs.add(model.S[24] == S_min)
             
             #f_V constraint
             model.constrs.add(model.S1_V[t] == model.b_rt[t] * model.z[t] - model.Q_da[t] * self.P_da[t] - model.z[t] * self.P_rt[t] + self.P_rt[t] * model.Q_da[t])
@@ -617,9 +617,6 @@ plt.ylim(0, 2000)
 plt.legend()
 plt.show()
 
-"""
-
-
 for n in [84]:
     plt.plot(Tr, scenarios[n][0], label = f"scenario{n}")
 plt.xlabel('Time')
@@ -647,9 +644,9 @@ plt.ylim(0, 2)
 plt.legend()
 plt.show()
 
-
-
 """
+
+
 for n in r:
     plt.plot(Tr, b_da_list[n])
     
@@ -689,7 +686,7 @@ plt.title('S')
 plt.ylim(0, 2000)
 plt.legend()
 plt.show()
-"""
+
 
 ## Optimal Value Comparison 
 
