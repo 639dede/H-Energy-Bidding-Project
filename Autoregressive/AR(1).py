@@ -25,15 +25,24 @@ non_AR_1=[]
 
 non_AR_num = 0
 
+ar1_coefficients = []
+
+all_residuals = []
+
 for i in range(len(reshaped_array)):
     ts = reshaped_array[i, :]
 
     # Fit an AR(1) model to the first time series
     model = sm.tsa.ARIMA(ts, order=(1, 0, 0)).fit()
+    
+    # Get the AR(1) coefficients
+    ar1_coefficient = model.arparams[0]
+    ar1_coefficients.append(ar1_coefficient)
 
     # Get the residuals
     residuals = model.resid
-
+    all_residuals.extend(residuals) 
+    
     # Perform the Ljung-Box test (lags=11 for 11 residual autocorrelations)
     ljung_box_result = acorr_ljungbox(residuals, lags=[10], return_df=True)
 
@@ -43,4 +52,13 @@ for i in range(len(reshaped_array)):
         non_AR_1.append(i)
         non_AR_num+=1
         
+        
+average_ar1 = np.mean(ar1_coefficients)
+
+all_residuals = np.array(all_residuals)
+
+variance_white_noise = np.var(all_residuals)
+
 print(non_AR_num)
+print(average_ar1)
+print(variance_white_noise)

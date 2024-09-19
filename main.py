@@ -206,8 +206,8 @@ class deterministic_setting_1(pyo.ConcreteModel):
     
         for t in range(T):
             # q_da, q_rt constraint
-            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t] + S_max - S_min)
-            model.constrs.add(model.q_rt[t] <= 1.1*self.E_1[t] + S_max - S_min)
+            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t] + B)
+            model.constrs.add(model.q_rt[t] <= 1.1*self.E_1[t] + B)
             
             # Demand response
             model.constrs.add(model.b_da[t] - self.P_da[t] <= M * (1-model.y_da[t]))
@@ -423,7 +423,7 @@ class deterministic_setting_2(pyo.ConcreteModel):
     
         for t in range(T):
             # q_da, q_rt constraint
-            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t] + S_max - S_min)
+            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t] + B)
             
             # Demand Response
             model.constrs.add(model.b_da[t] - self.P_da[t] <= M * (1-model.y_da[t]))
@@ -616,8 +616,8 @@ class deterministic_setting_1_prime(pyo.ConcreteModel):
     
         for t in range(T):
             # q_da, q_rt constraint
-            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t] + S_max - S_min)
-            model.constrs.add(model.q_rt[t] <= 1.1*self.E_1[t] + S_max - S_min)
+            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t] + B)
+            model.constrs.add(model.q_rt[t] <= 1.1*self.E_1[t] + B)
             
             # Demand response
             model.constrs.add(model.b_da[t] - self.P_da[t] <= M * (1-model.y_da[t]))
@@ -836,7 +836,7 @@ class deterministic_setting_2_prime(pyo.ConcreteModel):
     
         for t in range(T):
             # q_da, q_rt constraint
-            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t] + S_max - S_min)
+            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t] + B)
             
             # Demand Response
             model.constrs.add(model.b_da[t] - self.P_da[t] <= M * (1-model.y_da[t]))
