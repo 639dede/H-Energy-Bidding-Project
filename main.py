@@ -756,7 +756,7 @@ class deterministic_setting_1_prime(pyo.ConcreteModel):
         return self.objective_value()
 
 class deterministic_setting_2_prime(pyo.ConcreteModel):
-    def __init__ (self, n):
+    def __init__ (self, n, init_SoC):
         super().__init__("Deterministic_Setting2")
         
         self.solved = False        
@@ -767,6 +767,7 @@ class deterministic_setting_2_prime(pyo.ConcreteModel):
         self.E_0 = self.scenario[2]        
         self.E_1 = self.scenario[3]        
         self.U = self.scenario[4]
+        self.init_Soc = init_SoC
         
         self.b_da_values = []
         self.b_rt_values = []
@@ -897,8 +898,8 @@ class deterministic_setting_2_prime(pyo.ConcreteModel):
 
         # General Constraints
         
-        model.constrs.add(model.S[0] == S_max)
-        model.constrs.add(model.S[24] == S_max)
+        model.constrs.add(model.S[0] == self.init_Soc)
+        model.constrs.add(model.S[24] == self.init_Soc)
         model.constrs.add(sum(model.q_da[t] for t in range(24)) == E_0_sum)
 
         # Objective Function
@@ -972,9 +973,9 @@ c = 0
 anormal_scenarios_b_da = []
 anormal_scenarios_b_rt = []
 anormal_scenarios_q_da = []
-
+"""
 for n in r:
-    det = deterministic_setting_2_prime(n)
+    det = deterministic_setting_2_prime(n, 0.5*S)
     det.solve()
     det.optimal_solutions()
     b_da_list.append(det.b_da_values)
@@ -1005,9 +1006,6 @@ for n in r:
         anormal_scenarios_q_da.append(n)
     c=0
 
-
-
-"""
 for n in anormal_scenarios_b_da:
     plt.plot(Tr, b_da_list[n], label = f"scenario{n}")
 plt.xlabel('Time')
@@ -1063,8 +1061,6 @@ plt.ylim(0, 2)
 plt.legend()
 plt.show()
 
-"""
-
 for n in r:
     plt.plot(Tr, b_da_list[n])
     
@@ -1104,7 +1100,7 @@ plt.title('S')
 plt.ylim(0, 2000)
 plt.legend()
 plt.show()
-
+"""
 
 
 ## Optimal Value Comparison 
@@ -1139,27 +1135,47 @@ plt.ylim(0, 2000000)
 plt.legend()
 plt.show()
 
-
-
 print(difference)
 
+"""
+
+# Optimal Initial SoC value
+
+d2_1_obj = []
+d2_2_obj = []
+d2_3_obj = []
+d2_4_obj = []
+d2_5_obj = []
 
 for n in r:
-    d1 = deterministic_setting_1(n)
-    d2 = deterministic_setting_2(n)
-    d1_obj.append(d1.objective_value())
-    d2_obj.append(d2.objective_value())
-    difference.append(abs(d1.objective_value()-d2.objective_value()))
+    d2_1 = deterministic_setting_2_prime(n, 0.1*S)
+    d2_2 = deterministic_setting_2_prime(n, 0.3*S)
+    d2_3 = deterministic_setting_2_prime(n, 0.5*S)
+    d2_4 = deterministic_setting_2_prime(n, 0.7*S)
+    d2_5 = deterministic_setting_2_prime(n, 0.9*S)
+    
+    d2_1_obj.append(d2_1.objective_value())
+    d2_2_obj.append(d2_2.objective_value())
+    d2_3_obj.append(d2_3.objective_value())
+    d2_4_obj.append(d2_4.objective_value())
+    d2_5_obj.append(d2_5.objective_value())
 
-plt.plot(r, d1_obj, label='Original')
-plt.plot(r, d2_obj, label='Approximation')
-plt.plot(r, difference, label='Abs difference')
+plt.plot(r, d2_1_obj, label='0.1S')
+plt.plot(r, d2_2_obj, label='0.3S')
+plt.plot(r, d2_3_obj, label='0.5S')
+plt.plot(r, d2_4_obj, label='0.7S')
+plt.plot(r, d2_5_obj, label='0.9S')
+
+def mean(a):
+    return sum(a)/len(a)
+
+print(mean(d2_1_obj), mean(d2_2_obj), mean(d2_3_obj), mean(d2_4_obj), mean(d2_5_obj))
+
 plt.xlabel('Scenario Index')
 plt.ylabel('Values')
-plt.title('Comparison of Deterministic Settings')
-plt.ylim(0, 10000000)
+plt.title('Comparison')
+plt.ylim(0, 1000000)
 plt.legend()
 plt.show()
 
-"""
 
