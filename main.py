@@ -119,7 +119,9 @@ scenarios = []
 for n in range(len(real_time_prices)):
     s = generate_scenario(n)
     scenarios.append(s) 
-    
+
+del scenarios[90]
+
 class deterministic_setting_1(pyo.ConcreteModel):
     def __init__ (self, n):
         super().__init__("Deterministic_Setting1")
@@ -950,7 +952,7 @@ class deterministic_setting_2_prime(pyo.ConcreteModel):
 
 ## Results
 
-r = range(len(scenarios))
+r = range(len(scenarios)-30)
 Tr = range(T)
 
 ## Optimal Solutions of Deterministic Setting 2
@@ -973,7 +975,8 @@ c = 0
 anormal_scenarios_b_da = []
 anormal_scenarios_b_rt = []
 anormal_scenarios_q_da = []
-"""
+
+
 for n in r:
     det = deterministic_setting_2_prime(n, 0.5*S)
     det.solve()
@@ -1100,7 +1103,7 @@ plt.title('S')
 plt.ylim(0, 2000)
 plt.legend()
 plt.show()
-"""
+
 
 
 ## Optimal Value Comparison 
@@ -1174,7 +1177,7 @@ print(mean(d2_1_obj), mean(d2_2_obj), mean(d2_3_obj), mean(d2_4_obj), mean(d2_5_
 plt.xlabel('Scenario Index')
 plt.ylabel('Values')
 plt.title('Comparison')
-plt.ylim(0, 1000000)
+plt.ylim(0, 1400000)
 plt.legend()
 plt.show()
 
