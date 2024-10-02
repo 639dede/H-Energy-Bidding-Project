@@ -952,7 +952,8 @@ class deterministic_setting_2_prime(pyo.ConcreteModel):
 
 ## Results
 
-r = range(len(scenarios)-30)
+r = range(93)
+#ranged_r = range(len(scenarios)-123)
 Tr = range(T)
 
 ## Optimal Solutions of Deterministic Setting 2
@@ -970,12 +971,7 @@ a = 0
 b = 0
 c = 0
 
-## Det2 optimal solutions
-
-anormal_scenarios_b_da = []
-anormal_scenarios_b_rt = []
-anormal_scenarios_q_da = []
-
+## Det2' optimal solutions
 
 for n in r:
     det = deterministic_setting_2_prime(n, 0.5*S)
@@ -990,79 +986,6 @@ for n in r:
     d_list.append(det.d_values)
     z_list.append(det.z_values)
     S_list.append(det.S_values)
-    for i in det.b_da_values:
-        if i >= -P_r+1:    
-            a += 1
-    if a != 0:
-        anormal_scenarios_b_da.append(n)
-    a=0
-    for i in det.b_rt_values:
-        if i >= -P_r+1:    
-            b += 1
-    if b != 0:
-        anormal_scenarios_b_rt.append(n)
-    b=0
-    for t, i in enumerate(det.q_da_values):
-        if i <= E_0_mean[t] + S_max - S_min - 10:    
-            c += 1
-    if c != 0:
-        anormal_scenarios_q_da.append(n)
-    c=0
-
-for n in anormal_scenarios_b_da:
-    plt.plot(Tr, b_da_list[n], label = f"scenario{n}")
-plt.xlabel('Time')
-plt.ylabel('b_da values')
-plt.title('b_da')
-plt.ylim(-110, 20)
-plt.legend()
-plt.show()
-
-for n in anormal_scenarios_b_rt:
-    plt.plot(Tr, b_rt_list[n], label = f"scenario{n}")
-plt.xlabel('Time')
-plt.ylabel('b_rt values')
-plt.title('b_rt')
-plt.ylim(-110, 20)
-plt.legend()
-plt.show()
-
-for n in anormal_scenarios_q_da:
-    plt.plot(Tr, q_da_list[n], label = f"scenario{n}")
-    
-plt.xlabel('Time')
-plt.ylabel('q_da values')
-plt.title('q_da')
-plt.ylim(0, 2000)
-plt.legend()
-plt.show()
-
-for n in [84]:
-    plt.plot(Tr, scenarios[n][0], label = f"scenario{n}")
-plt.xlabel('Time')
-plt.ylabel('DA_Prices')
-plt.title('DA_Prices')
-plt.ylim(-110, 300)
-plt.legend()
-plt.show()
-
-for n in [84]:
-    plt.plot(Tr, scenarios[n][1], label = f"scenario{n}")
-plt.xlabel('Time')
-plt.ylabel('RT_Prices')
-plt.title('RT_Prices')
-plt.ylim(-110, 300)
-plt.legend()
-plt.show()
-
-for n in [84]:
-    plt.plot(Tr, scenarios[n][4], label = f"scenario{n}")
-plt.xlabel('Time')
-plt.ylabel('U')
-plt.title('U')
-plt.ylim(0, 2)
-plt.legend()
-plt.show()
 
 for n in r:
     plt.plot(Tr, b_da_list[n])
@@ -1143,6 +1066,7 @@ print(difference)
 """
 
 # Optimal Initial SoC value
+
 
 d2_1_obj = []
 d2_2_obj = []
