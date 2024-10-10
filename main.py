@@ -952,8 +952,9 @@ class deterministic_setting_2_prime(pyo.ConcreteModel):
 
 ## Results
 
-r = range(93)
+r = range(93, 185)
 #ranged_r = range(len(scenarios)-123)
+
 Tr = range(T)
 
 ## Optimal Solutions of Deterministic Setting 2
@@ -970,7 +971,7 @@ S_list = []
 a = 0
 b = 0
 c = 0
-
+"""
 ## Det2' optimal solutions
 
 for n in r:
@@ -1027,12 +1028,58 @@ plt.ylim(0, 2000)
 plt.legend()
 plt.show()
 
+"""
 
+avg_day_ahead_prices=[]
+avg_real_time_prices=[]
+
+for t in Tr:
+    sum_day_ahead_prices=0
+    sum_real_time_prices=0
+    for n in r:
+        sum_day_ahead_prices+=day_ahead_prices[n][t]
+        sum_real_time_prices+=real_time_prices[n][t]
+    avg_day_ahead_prices.append(sum_day_ahead_prices/93)
+    avg_real_time_prices.append(sum_real_time_prices/93)
+    
+for n in r:
+    plt.plot(Tr, day_ahead_prices[n])
+plt.xlabel('Time')
+plt.ylabel('P_da values')
+plt.title('P_da')
+plt.ylim(-130, 300)
+plt.legend()
+plt.show()
+
+for n in r:
+    plt.plot(Tr, real_time_prices[n])
+plt.xlabel('Time')
+plt.ylabel('P_rt values')
+plt.title('P_rt')
+plt.ylim(-130, 300)
+plt.legend()
+plt.show()
+
+plt.plot(Tr, avg_day_ahead_prices)
+plt.xlabel('Time')
+plt.ylabel('avg_P_da values')
+plt.title('avg_P_da')
+plt.ylim(-130, 300)
+plt.legend()
+plt.show()
+
+plt.plot(Tr, avg_real_time_prices)
+plt.xlabel('Time')
+plt.ylabel('avg_P_rt values')
+plt.title('avg_P_rt')
+plt.ylim(-130, 300)
+plt.legend()
+plt.show()
 
 ## Optimal Value Comparison 
 
-
 """
+
 d1_obj = []
 d2_obj = []
 difference = []
@@ -1064,10 +1111,9 @@ plt.show()
 print(difference)
 
 """
-
 # Optimal Initial SoC value
 
-
+"""
 d2_1_obj = []
 d2_2_obj = []
 d2_3_obj = []
@@ -1106,3 +1152,4 @@ plt.legend()
 plt.show()
 
 
+"""
