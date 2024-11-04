@@ -383,201 +383,8 @@ class deterministic_setting_1(pyo.ConcreteModel):
                                 
         return self.objective_value()
 
+
 class deterministic_setting_2(pyo.ConcreteModel):
-    def __init__ (self, n, init_SoC):
-        super().__init__("Deterministic_Setting2")
-        
-        self.solved = False        
-        self.n = n        
-        self.scenario = scenarios[n]        
-        self.P_da = self.scenario[0]        
-        self.P_rt = self.scenario[1]        
-        self.E_0 = self.scenario[2]        
-        self.E_1 = self.scenario[3]        
-        self.U = self.scenario[4]
-        self.init_Soc = init_SoC
-        
-        self.b_da_values = []
-        self.b_rt_values = []
-        self.q_da_values = []
-        self.u_values = []
-        self.g_values = []
-        self.c_values = []
-        self.d_values = []
-        self.z_values = []
-        self.S_values = []
-        
-    def build_model(self):
-        model = self.model()
-        
-        model.TIME = pyo.RangeSet(0, T-1)
-        
-        model.ESSTIME = pyo.RangeSet(0, T)
-        
-        model.b_da = pyo.Var(model.TIME, bounds=(-P_r, 0), domain=pyo.Reals)
-        model.q_da = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
-        model.b_rt = pyo.Var(model.TIME, bounds=(-P_r, 0), domain=pyo.Reals)
-        model.g = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
-        model.c = pyo.Var(model.TIME, bounds=(0, B), domain=pyo.NonNegativeReals)
-        model.d = pyo.Var(model.TIME, bounds=(0, B), domain=pyo.NonNegativeReals)
-        model.u = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
-        model.z = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
-        
-        model.S = pyo.Var(model.ESSTIME, bounds=(S_min, S_max), domain=pyo.Reals) 
-        
-        model.y_da = pyo.Var(model.TIME, domain=pyo.Binary)
-        model.y_rt = pyo.Var(model.TIME, domain=pyo.Binary)
-        model.y_S = pyo.Var(model.TIME, domain=pyo.Binary)
-        
-        model.Q_da = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
-        model.Q_c = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
-        
-        # Linearization Real Variables
-        model.m1_V = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.m1_E = pyo.Var(model.TIME, domain=pyo.Reals, initialize = 0)
-        model.m1_Im = pyo.Var(model.TIME, domain=pyo.Reals, initialize = 0)
-        model.m2_Im = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.S1_V = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.S1_E = pyo.Var(model.TIME, domain=pyo.Reals, initialize = 0)
-        model.S1_Im = pyo.Var(model.TIME, domain=pyo.Reals)
-
-        # Linearization Binary Variables
-        model.n1_V = pyo.Var(model.TIME, domain=pyo.Binary)
-        model.n1_E = pyo.Var(model.TIME, domain=pyo.Binary)
-        model.n1_Im = pyo.Var(model.TIME, domain=pyo.Binary)
-        model.n2_Im = pyo.Var(model.TIME, domain=pyo.Binary)
-        model.n1_F = pyo.Var(model.TIME, domain=pyo.Binary)
-        model.n2_F = pyo.Var(model.TIME, domain=pyo.Binary)
-        model.n3_F = pyo.Var(model.TIME, domain=pyo.Binary)
-        
-        #부가정산금
-        model.f_max = pyo.Var(model.TIME, domain=pyo.Reals)
-
-
-
-        #Constraints
-
-        if hasattr(model, 'constrs'):
-            model.del_component('constrs')
-            model.del_component('constrs_index')
-        
-        model.constrs = pyo.ConstraintList()
-    
-        for t in range(T):
-            # q_da, q_rt constraint
-            model.constrs.add(model.q_da[t] <= 1.1*self.E_0[t] + B)
-            
-            # Demand Response
-            model.constrs.add(model.b_da[t] - self.P_da[t] <= M * (1-model.y_da[t]))
-            model.constrs.add(self.P_da[t] - model.b_da[t] <= M * model.y_da[t])
-            model.constrs.add(model.Q_da[t] == model.y_da[t] * model.q_da[t])
-        
-            model.constrs.add(model.b_rt[t] - self.P_rt[t] <= M * (1-model.y_rt[t]))
-            model.constrs.add(self.P_rt[t] - model.b_rt[t] <= M * model.y_rt[t])
-            model.constrs.add(model.z[t] == model.y_rt[t] * model.u[t]) 
-            
-            model.constrs.add(model.Q_c[t] == model.z[t]*self.U[t])
- 
-            # b_rt <= b_da
-            model.constrs.add(model.b_rt[t] <= model.b_da[t])
-            
-            # ESS operation
-            model.constrs.add(model.S[t+1] == model.S[t] + v*model.c[t] - (model.d[t])/v)
-            model.constrs.add(model.z[t] == model.g[t] + (model.d[t])/v - v*model.c[t])
-            model.constrs.add(model.g[t] <= self.E_1[t])
-            model.constrs.add(model.c[t] <= model.g[t])
-            
-            #f_V constraint
-            model.constrs.add(model.S1_V[t] == model.b_rt[t] * model.z[t] - model.Q_da[t] * self.P_da[t] - model.z[t] * self.P_rt[t] + self.P_rt[t] * model.Q_da[t])
-        
-            model.constrs.add(model.m1_V[t] >= model.S1_V[t])
-            model.constrs.add(model.m1_V[t] >= 0)
-            model.constrs.add(model.m1_V[t] <= model.S1_V[t] + M * (1 - model.n1_V[t]))
-            model.constrs.add(model.m1_V[t] <= M * model.n1_V[t])
-
-            # f_E linearization constraints
-            model.constrs.add(model.S1_E[t] == self.P_rt[t] - model.b_da[t])
-
-            model.constrs.add(model.m1_E[t] >= (model.Q_da[t] - model.z[t])*model.S1_E[t])
-            model.constrs.add(model.m1_E[t] >= 0)
-            model.constrs.add(model.m1_E[t] <= (model.Q_da[t] - model.z[t])*model.S1_E[t] + M * (1 - model.n1_E[t]))
-            model.constrs.add(model.m1_E[t] <= M * model.n1_E[t])
-            
-            # f_max linearization constraints
-            model.constrs.add(model.f_max[t] >= model.m1_V[t])
-            model.constrs.add(model.f_max[t] >= model.m1_E[t]) 
-            model.constrs.add(model.f_max[t] >= 0)
-            model.constrs.add(model.f_max[t] <= model.m1_V[t] + M*(1-model.n1_F[t]))
-            model.constrs.add(model.f_max[t] <= model.m1_E[t] + M*(1-model.n2_F[t]))
-            model.constrs.add(model.f_max[t] <= M*(1-model.n3_F[t]))
-            model.constrs.add(model.n1_F[t]+model.n2_F[t]+model.n3_F[t]==1)
-        
-            # f_Im linearization constraints
-            model.constrs.add(model.S1_Im[t] == (model.z[t] - model.Q_c[t]) - 0.12 * C)
-
-            model.constrs.add(model.m1_Im[t] >= model.S1_Im[t])
-            model.constrs.add(model.m1_Im[t] >= 0)
-            model.constrs.add(model.m1_Im[t] <= model.S1_Im[t] + M * (1 - model.n1_Im[t]))
-            model.constrs.add(model.m1_Im[t] <= M * model.n1_Im[t])
-
-            model.constrs.add(model.m2_Im[t] >= self.P_rt[t] - model.b_rt[t])
-            model.constrs.add(model.m2_Im[t] >= - model.b_rt[t])
-            model.constrs.add(model.m2_Im[t] <= self.P_rt[t] - model.b_rt[t] + M * (1 - model.n2_Im[t]))
-            model.constrs.add(model.m2_Im[t] <= - model.b_rt[t] + M * model.n2_Im[t])
-
-        # General Constraints
-        
-        model.constrs.add(model.S[0] == self.init_Soc)
-        model.constrs.add(model.S[24] == self.init_Soc)
-        model.constrs.add(sum(model.q_da[t] for t in range(24)) == E_0_sum)
-
-        # Objective Function
-        model.objective = pyo.Objective(expr=sum(self.P_da[t] * model.Q_da[t] + self.P_rt[t] * (model.z[t] - model.Q_da[t]) + model.f_max[t] + (- model.m1_Im[t] * model.m2_Im[t]) + model.z[t] * P_r for t in model.TIME), sense=pyo.maximize)
-    
-    def solve(self):
-        self.build_model()
-        SOLVER.solve(self)
-        print(f"problem{n} solved.")
-        self.solved = True
-        
-    def report(self):
-        if not self.solved:
-            self.solve()
-            self.solved = True
-            
-        print(f"\noptimal value = {pyo.value(self.objective)}")
-        
-
-        if not self.solved:
-            self.solve()
-            self.solved = True
-        for t in range(T):
-            self.S_values.append(pyo.value(self.S[t]))
-        return self.S_values
-
-    def optimal_solutions(self):
-        if not self.solved:
-            self.solve()
-            self.solved = True
-        for t in range(T):
-            self.b_da_values.append(pyo.value(self.b_da[t]))
-            self.b_rt_values.append(pyo.value(self.b_rt[t]))
-            self.q_da_values.append(pyo.value(self.q_da[t]))
-            self.u_values.append(pyo.value(self.u[t]))
-            self.g_values.append(pyo.value(self.g[t]))
-            self.c_values.append(pyo.value(self.c[t]))
-            self.d_values.append(pyo.value(self.d[t]))
-            self.z_values.append(pyo.value(self.z[t]))
-            self.S_values.append(pyo.value(self.S[t]))     
-      
-    def objective_value(self):
-        if not self.solved:
-            self.solve()
-            self.solved = True
-            
-        return pyo.value(self.objective)
-
-class deterministic_setting_2_prime(pyo.ConcreteModel):
     def __init__ (self, n, init_SoC):
         super().__init__("Deterministic_Setting2")
         
@@ -845,7 +652,7 @@ def original_obj_fcn(n):
 
 ## Results
 
-r = range(14, 15)
+r = range(9)
 # 모의시장 range(93)
 # 실제시장 range(93, 185)
 #ranged_r = range(len(scenarios)-123)
@@ -869,7 +676,7 @@ c = 0
 ## Det2' optimal solutions
 
 for n in r:
-    det = deterministic_setting_2_prime(n, 0.5*S)
+    det = deterministic_setting_1(n, 0.5*S)
     det.solve()
     det.optimal_solutions()
     b_da_list.append(det.b_da_values)
@@ -881,7 +688,7 @@ for n in r:
     Q_da_list.append(det.Q_da_values)
     Q_c_list.append(det.Q_c_values)
     
-"""
+
 
 for n in r:
     plt.plot(Tr, b_da_list[n])
@@ -963,7 +770,7 @@ plt.ylim(0, 2000)
 plt.legend()
 plt.show()
 
-"""
+
 ## Price Analysis
 """
 avg_day_ahead_prices=[]
@@ -1015,7 +822,7 @@ plt.show()
 
 ## Optimal Value Comparison 
 
-
+"""
 d1_obj = []
 d2_obj = []
 difference = []
@@ -1025,7 +832,7 @@ for n in r:
     d1 = deterministic_setting_1(n, 0.5*S)
     d1_o = d1.objective_value()
     d2_o = original_obj_fcn(n).original_obj()
-    #d2 = deterministic_setting_2_prime(n, 0.5*S)
+    #d2 = deterministic_setting_2(n, 0.5*S)
     d1_obj.append(d1_o)
     d2_obj.append(d2_o)
     difference.append(abs(d1_o-d2_o))
@@ -1042,8 +849,8 @@ plt.ylim(0, 2000000)
 plt.legend()
 plt.show()
 
-#print(difference)
 
+"""
 
 # Optimal Initial SoC value
 
