@@ -92,7 +92,9 @@ B = 560
 S_min = 168
 S_max = 1512
 P_r = 80
-M = 10**6
+M_price = 600
+M_gen = C+S
+M_set = 5*10**5
 T = 24
 v = 0.95
 
@@ -166,7 +168,7 @@ class deterministic_setting_1(pyo.ConcreteModel):
         model.g = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
         model.c = pyo.Var(model.TIME, bounds=(0, B), domain=pyo.NonNegativeReals)
         model.d = pyo.Var(model.TIME, bounds=(0, B), domain=pyo.NonNegativeReals)
-        model.u = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
+        model.u = pyo.Var(model.TIME, bounds=(0, S+C), domain=pyo.NonNegativeReals)
         
         model.S = pyo.Var(model.ESSTIME, bounds=(S_min, S_max), domain=pyo.Reals) 
         
@@ -174,26 +176,25 @@ class deterministic_setting_1(pyo.ConcreteModel):
         model.y_rt = pyo.Var(model.TIME, domain=pyo.Binary)
         model.y_S = pyo.Var(model.TIME, domain=pyo.Binary)
         model.y_E = pyo.Var(model.TIME, domain=pyo.Binary)
-        
         model.Q_da = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
         model.Q_rt = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
         model.Q_c = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
         
         # Linearization Real Variables
-        model.m1_V = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.m2_V = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.m1_E = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.m2_E = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.m3_E = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.m4_E = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.m5_E = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.m6_E = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.m1_Im = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.m2_Im = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.S1_V = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.S1_E = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.S2_E = pyo.Var(model.TIME, domain=pyo.Reals)
-        model.S1_Im = pyo.Var(model.TIME, domain=pyo.Reals)
+        model.m1_V = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.m2_V = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.m1_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.m2_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.m3_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.m4_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.m5_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.m6_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.m1_Im = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.m2_Im = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.S1_V = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.S1_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.S2_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.S1_Im = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
 
         # Linearization Binary Variables
         model.n1_V = pyo.Var(model.TIME, domain=pyo.Binary)
@@ -229,12 +230,12 @@ class deterministic_setting_1(pyo.ConcreteModel):
             model.constrs.add(model.q_rt[t] <= 1.1*self.E_1[t] + B)
             
             # Demand response
-            model.constrs.add(model.b_da[t] - self.P_da[t] <= M * (1-model.y_da[t]))
-            model.constrs.add(self.P_da[t] - model.b_da[t] <= M * model.y_da[t])
+            model.constrs.add(model.b_da[t] - self.P_da[t] <= M_price * (1-model.y_da[t]))
+            model.constrs.add(self.P_da[t] - model.b_da[t] <= M_price * model.y_da[t])
             model.constrs.add(model.Q_da[t] == model.y_da[t] * model.q_da[t])
         
-            model.constrs.add(model.b_rt[t] - self.P_rt[t] <= M * (1-model.y_rt[t]))
-            model.constrs.add(self.P_rt[t] - model.b_rt[t] <= M * model.y_rt[t])
+            model.constrs.add(model.b_rt[t] - self.P_rt[t] <= M_price * (1-model.y_rt[t]))
+            model.constrs.add(self.P_rt[t] - model.b_rt[t] <= M_price * model.y_rt[t])
             model.constrs.add(model.Q_rt[t] == model.y_rt[t] * model.q_rt[t]) 
             
             model.constrs.add(model.Q_c[t] == model.Q_rt[t]*self.U[t])
@@ -252,8 +253,8 @@ class deterministic_setting_1(pyo.ConcreteModel):
             model.constrs.add(model.S1_V[t] == model.b_rt[t] * model.m1_V[t] - model.Q_da[t] * self.P_da[t] - model.m1_V[t] * self.P_rt[t] + self.P_rt[t] * model.Q_da[t])
             model.constrs.add(model.m1_V[t] <= model.u[t])
             model.constrs.add(model.m1_V[t] <= model.Q_c[t])
-            model.constrs.add(model.m1_V[t] >= model.u[t] - M * (1 - model.n1_V[t]))
-            model.constrs.add(model.m1_V[t] >= model.Q_c[t] - M * model.n1_V[t])
+            model.constrs.add(model.m1_V[t] >= model.u[t] - M_gen * (1 - model.n1_V[t]))
+            model.constrs.add(model.m1_V[t] >= model.Q_c[t] - M_gen * model.n1_V[t])
     
 
             # f_E linearization constraints
@@ -261,38 +262,38 @@ class deterministic_setting_1(pyo.ConcreteModel):
 
             model.constrs.add(model.m1_E[t] <= model.Q_da[t])
             model.constrs.add(model.m1_E[t] <= model.q_rt[t])
-            model.constrs.add(model.m1_E[t] >= model.Q_da[t] - M * (1 - model.n1_E[t]))
-            model.constrs.add(model.m1_E[t] >= model.q_rt[t] - M * model.n1_E[t])
+            model.constrs.add(model.m1_E[t] >= model.Q_da[t] - M_gen * (1 - model.n1_E[t]))
+            model.constrs.add(model.m1_E[t] >= model.q_rt[t] - M_gen * model.n1_E[t])
             
-            model.constrs.add(model.Q_da[t] - model.Q_c[t] <= M * model.y_E[t])
-            model.constrs.add(model.Q_c[t] - model.Q_da[t] <= M * (1-model.y_E[t]))
+            model.constrs.add(model.Q_da[t] - model.Q_c[t] <= M_gen * model.y_E[t])
+            model.constrs.add(model.Q_c[t] - model.Q_da[t] <= M_gen * (1-model.y_E[t]))
 
             model.constrs.add(model.m2_E[t] <= model.u[t])
             model.constrs.add(model.m2_E[t] <= model.Q_da[t])
-            model.constrs.add(model.m2_E[t] >= model.u[t] - M * (1 - model.n2_E[t]))
-            model.constrs.add(model.m2_E[t] >= model.Q_da[t] - M * model.n2_E[t])
+            model.constrs.add(model.m2_E[t] >= model.u[t] - M_gen * (1 - model.n2_E[t]))
+            model.constrs.add(model.m2_E[t] >= model.Q_da[t] - M_gen * model.n2_E[t])
 
             model.constrs.add(model.m3_E[t] >= model.m2_E[t])
             model.constrs.add(model.m3_E[t] >= model.Q_c[t])
-            model.constrs.add(model.m3_E[t] <= model.m2_E[t] + M * (1 - model.n3_E[t]))
-            model.constrs.add(model.m3_E[t] <= model.Q_c[t] + M * model.n3_E[t])
+            model.constrs.add(model.m3_E[t] <= model.m2_E[t] + M_gen * (1 - model.n3_E[t]))
+            model.constrs.add(model.m3_E[t] <= model.Q_c[t] + M_gen * model.n3_E[t])
 
             model.constrs.add(model.m4_E[t] <= model.m3_E[t])
             model.constrs.add(model.m4_E[t] <= model.q_rt[t])
-            model.constrs.add(model.m4_E[t] >= model.m3_E[t] - M * (1 - model.n4_E[t]))
-            model.constrs.add(model.m4_E[t] >= model.q_rt[t] - M * model.n4_E[t])
+            model.constrs.add(model.m4_E[t] >= model.m3_E[t] - M_gen * (1 - model.n4_E[t]))
+            model.constrs.add(model.m4_E[t] >= model.q_rt[t] - M_gen * model.n4_E[t])
         
             model.constrs.add(model.m5_E[t] >= model.u[t])
             model.constrs.add(model.m5_E[t] >= model.Q_da[t])
-            model.constrs.add(model.m5_E[t] <= model.u[t] + M * (1 - model.n5_E[t]))
-            model.constrs.add(model.m5_E[t] <= model.Q_da[t] + M * model.n5_E[t])
+            model.constrs.add(model.m5_E[t] <= model.u[t] + M_gen * (1 - model.n5_E[t]))
+            model.constrs.add(model.m5_E[t] <= model.Q_da[t] + M_gen * model.n5_E[t])
 
             model.constrs.add(model.m6_E[t] <= model.m5_E[t])
             model.constrs.add(model.m6_E[t] <= model.Q_c[t])
             model.constrs.add(model.m6_E[t] <= model.q_rt[t])
-            model.constrs.add(model.m6_E[t] >= model.m5_E[t] - M * (1-model.n6_E[t]))
-            model.constrs.add(model.m6_E[t] >= model.Q_c[t] - M * (1-model.n7_E[t]))            
-            model.constrs.add(model.m6_E[t] >= model.q_rt[t] - M * (1-model.n8_E[t]))    
+            model.constrs.add(model.m6_E[t] >= model.m5_E[t] - M_gen * (1-model.n6_E[t]))
+            model.constrs.add(model.m6_E[t] >= model.Q_c[t] - M_gen * (1-model.n7_E[t]))            
+            model.constrs.add(model.m6_E[t] >= model.q_rt[t] - M_gen * (1-model.n8_E[t]))    
             model.constrs.add(model.n6_E[t]+model.n7_E[t]+model.n8_E[t]==1)  
             
             model.constrs.add(model.S2_E[t] == model.m1_E[t]-model.y_E[t]*model.m4_E[t]-(1-model.y_E[t])*model.m6_E[t])
@@ -301,9 +302,9 @@ class deterministic_setting_1(pyo.ConcreteModel):
             model.constrs.add(model.f_max[t] >= model.S1_V[t])
             model.constrs.add(model.f_max[t] >= model.S1_E[t]*model.S2_E[t]) 
             model.constrs.add(model.f_max[t] >= 0)
-            model.constrs.add(model.f_max[t] <= model.S1_V[t] + M*(1-model.n1_F[t]))
-            model.constrs.add(model.f_max[t] <= model.S1_E[t]*model.S2_E[t] + M*(1-model.n2_F[t]))
-            model.constrs.add(model.f_max[t] <= M*(1-model.n3_F[t]))
+            model.constrs.add(model.f_max[t] <= model.S1_V[t] + M_set*(1-model.n1_F[t]))
+            model.constrs.add(model.f_max[t] <= model.S1_E[t]*model.S2_E[t] + M_set*(1-model.n2_F[t]))
+            model.constrs.add(model.f_max[t] <= M_set*(1-model.n3_F[t]))
             model.constrs.add(model.n1_F[t]+model.n2_F[t]+model.n3_F[t]==1)        
         
             # f_Im linearization constraints
@@ -311,13 +312,13 @@ class deterministic_setting_1(pyo.ConcreteModel):
 
             model.constrs.add(model.m1_Im[t] >= model.S1_Im[t])
             model.constrs.add(model.m1_Im[t] >= 0)
-            model.constrs.add(model.m1_Im[t] <= model.S1_Im[t] + M * (1 - model.n1_Im[t]))
-            model.constrs.add(model.m1_Im[t] <= M * model.n1_Im[t])
+            model.constrs.add(model.m1_Im[t] <= model.S1_Im[t] + M_gen * (1 - model.n1_Im[t]))
+            model.constrs.add(model.m1_Im[t] <= M_gen * model.n1_Im[t])
 
             model.constrs.add(model.m2_Im[t] >= self.P_rt[t] - model.b_rt[t])
             model.constrs.add(model.m2_Im[t] >= - model.b_rt[t])
-            model.constrs.add(model.m2_Im[t] <= self.P_rt[t] - model.b_rt[t] + M * (1 - model.n2_Im[t]))
-            model.constrs.add(model.m2_Im[t] <= - model.b_rt[t] + M * model.n2_Im[t])
+            model.constrs.add(model.m2_Im[t] <= self.P_rt[t] - model.b_rt[t] + M_price * (1 - model.n2_Im[t]))
+            model.constrs.add(model.m2_Im[t] <= - model.b_rt[t] + M_price * model.n2_Im[t])
         
         # General Constraints
         
@@ -382,7 +383,6 @@ class deterministic_setting_1(pyo.ConcreteModel):
             model.u[t].fix(u_values[t])
                                 
         return self.objective_value()
-
 
 class deterministic_setting_2(pyo.ConcreteModel):
     def __init__ (self, n, init_SoC):
@@ -472,12 +472,12 @@ class deterministic_setting_2(pyo.ConcreteModel):
             model.constrs.add(model.q_rt[t] <= 1.1*self.E_1[t] + B)
             
             # Demand response
-            model.constrs.add(model.b_da[t] - self.P_da[t] <= M * (1-model.y_da[t]))
-            model.constrs.add(self.P_da[t] - model.b_da[t] <= M * model.y_da[t])
+            model.constrs.add(model.b_da[t] - self.P_da[t] <= M_price * (1-model.y_da[t]))
+            model.constrs.add(self.P_da[t] - model.b_da[t] <= M_price * model.y_da[t])
             model.constrs.add(model.Q_da[t] == model.y_da[t] * model.q_da[t])
         
-            model.constrs.add(model.b_rt[t] - self.P_rt[t] <= M * (1-model.y_rt[t]))
-            model.constrs.add(self.P_rt[t] - model.b_rt[t] <= M * model.y_rt[t])
+            model.constrs.add(model.b_rt[t] - self.P_rt[t] <= M_price * (1-model.y_rt[t]))
+            model.constrs.add(self.P_rt[t] - model.b_rt[t] <= M_price * model.y_rt[t])
             model.constrs.add(model.Q_rt[t] == model.y_rt[t]*model.q_rt[t]) 
             
             model.constrs.add(model.Q_c[t] == model.Q_rt[t]*self.U[t])
@@ -496,24 +496,24 @@ class deterministic_setting_2(pyo.ConcreteModel):
         
             model.constrs.add(model.m1_V[t] >= model.S1_V[t])
             model.constrs.add(model.m1_V[t] >= 0)
-            model.constrs.add(model.m1_V[t] <= model.S1_V[t] + M * (1 - model.n1_V[t]))
-            model.constrs.add(model.m1_V[t] <= M * model.n1_V[t])
+            model.constrs.add(model.m1_V[t] <= model.S1_V[t] + M_set * (1 - model.n1_V[t]))
+            model.constrs.add(model.m1_V[t] <= M_set * model.n1_V[t])
 
             # f_E linearization constraints
             model.constrs.add(model.S1_E[t] == self.P_rt[t] - model.b_da[t])
 
             model.constrs.add(model.m1_E[t] >= (model.Q_da[t] - model.u[t])*model.S1_E[t])
             model.constrs.add(model.m1_E[t] >= 0)
-            model.constrs.add(model.m1_E[t] <= (model.Q_da[t] - model.u[t])*model.S1_E[t] + M * (1 - model.n1_E[t]))
-            model.constrs.add(model.m1_E[t] <= M * model.n1_E[t])
+            model.constrs.add(model.m1_E[t] <= (model.Q_da[t] - model.u[t])*model.S1_E[t] + M_set * (1 - model.n1_E[t]))
+            model.constrs.add(model.m1_E[t] <= M_set * model.n1_E[t])
             
             # f_max linearization constraints
             model.constrs.add(model.f_max[t] >= model.m1_V[t])
             model.constrs.add(model.f_max[t] >= model.m1_E[t]) 
             model.constrs.add(model.f_max[t] >= 0)
-            model.constrs.add(model.f_max[t] <= model.m1_V[t] + M*(1-model.n1_F[t]))
-            model.constrs.add(model.f_max[t] <= model.m1_E[t] + M*(1-model.n2_F[t]))
-            model.constrs.add(model.f_max[t] <= M*(1-model.n3_F[t]))
+            model.constrs.add(model.f_max[t] <= model.m1_V[t] + M_set*(1-model.n1_F[t]))
+            model.constrs.add(model.f_max[t] <= model.m1_E[t] + M_set*(1-model.n2_F[t]))
+            model.constrs.add(model.f_max[t] <= M_set*(1-model.n3_F[t]))
             model.constrs.add(model.n1_F[t]+model.n2_F[t]+model.n3_F[t]==1)
         
             # f_Im linearization constraints
@@ -521,13 +521,13 @@ class deterministic_setting_2(pyo.ConcreteModel):
 
             model.constrs.add(model.m1_Im[t] >= model.S1_Im[t])
             model.constrs.add(model.m1_Im[t] >= 0)
-            model.constrs.add(model.m1_Im[t] <= model.S1_Im[t] + M * (1 - model.n1_Im[t]))
-            model.constrs.add(model.m1_Im[t] <= M * model.n1_Im[t])
+            model.constrs.add(model.m1_Im[t] <= model.S1_Im[t] + M_gen * (1 - model.n1_Im[t]))
+            model.constrs.add(model.m1_Im[t] <= M_gen * model.n1_Im[t])
 
             model.constrs.add(model.m2_Im[t] >= self.P_rt[t] - model.b_rt[t])
             model.constrs.add(model.m2_Im[t] >= - model.b_rt[t])
-            model.constrs.add(model.m2_Im[t] <= self.P_rt[t] - model.b_rt[t] + M * (1 - model.n2_Im[t]))
-            model.constrs.add(model.m2_Im[t] <= - model.b_rt[t] + M * model.n2_Im[t])
+            model.constrs.add(model.m2_Im[t] <= self.P_rt[t] - model.b_rt[t] + M_price * (1 - model.n2_Im[t]))
+            model.constrs.add(model.m2_Im[t] <= - model.b_rt[t] + M_price * model.n2_Im[t])
 
         # General Constraints
         
@@ -637,18 +637,6 @@ class original_obj_fcn():
         
         return self.obj_fcn
     
-    
-"""
-def stage_obj_fcn(n, t):
-    
-    return 0
-
-def original_obj_fcn(n):
-    obj = 0
-    for t in Tr:
-        obj += stage_obj_fcn(n, t)
-    return obj
-"""
 
 ## Results
 
@@ -676,7 +664,7 @@ c = 0
 ## Det2' optimal solutions
 
 for n in r:
-    det = deterministic_setting_1(n, 0.5*S)
+    det = deterministic_setting_2(n, 0.5*S)
     det.solve()
     det.optimal_solutions()
     b_da_list.append(det.b_da_values)
@@ -688,8 +676,7 @@ for n in r:
     Q_da_list.append(det.Q_da_values)
     Q_c_list.append(det.Q_c_values)
     
-
-
+"""
 for n in r:
     plt.plot(Tr, b_da_list[n])
     
@@ -769,7 +756,7 @@ plt.title('u')
 plt.ylim(0, 2000)
 plt.legend()
 plt.show()
-
+"""
 
 ## Price Analysis
 """
@@ -822,7 +809,7 @@ plt.show()
 
 ## Optimal Value Comparison 
 
-"""
+
 d1_obj = []
 d2_obj = []
 difference = []
@@ -850,7 +837,7 @@ plt.legend()
 plt.show()
 
 
-"""
+
 
 # Optimal Initial SoC value
 
