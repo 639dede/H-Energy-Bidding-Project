@@ -254,11 +254,7 @@ class deterministic_setting_1(pyo.ConcreteModel):
             model.constrs.add(model.m1_V[t] <= model.Q_c[t])
             model.constrs.add(model.m1_V[t] >= model.u[t] - M * (1 - model.n1_V[t]))
             model.constrs.add(model.m1_V[t] >= model.Q_c[t] - M * model.n1_V[t])
-        
-            model.constrs.add(model.m2_V[t] >= model.S1_V[t])
-            model.constrs.add(model.m2_V[t] >= 0)
-            model.constrs.add(model.m2_V[t] <= model.S1_V[t] + M * (1 - model.n2_V[t]))
-            model.constrs.add(model.m2_V[t] <= M * model.n2_V[t])
+    
 
             # f_E linearization constraints
             model.constrs.add(model.S1_E[t] == self.P_rt[t] - model.b_da[t])
@@ -302,10 +298,10 @@ class deterministic_setting_1(pyo.ConcreteModel):
             model.constrs.add(model.S2_E[t] == model.m1_E[t]-model.y_E[t]*model.m4_E[t]-(1-model.y_E[t])*model.m6_E[t])
                  
             #f_max linearization constraints
-            model.constrs.add(model.f_max[t] >= model.m2_V[t])
+            model.constrs.add(model.f_max[t] >= model.S1_V[t])
             model.constrs.add(model.f_max[t] >= model.S1_E[t]*model.S2_E[t]) 
             model.constrs.add(model.f_max[t] >= 0)
-            model.constrs.add(model.f_max[t] <= model.m2_V[t] + M*(1-model.n1_F[t]))
+            model.constrs.add(model.f_max[t] <= model.S1_V[t] + M*(1-model.n1_F[t]))
             model.constrs.add(model.f_max[t] <= model.S1_E[t]*model.S2_E[t] + M*(1-model.n2_F[t]))
             model.constrs.add(model.f_max[t] <= M*(1-model.n3_F[t]))
             model.constrs.add(model.n1_F[t]+model.n2_F[t]+model.n3_F[t]==1)        
@@ -781,9 +777,8 @@ class deterministic_setting_2_prime(pyo.ConcreteModel):
             
         return pyo.value(self.objective)
     
-class original_obj_fcn(pyo.ConcreteModel):
+class original_obj_fcn():
     def __init__ (self, n):
-        super().__init__("Deterministic_Setting2")
         
         self.solved = False        
         self.n = n        
@@ -803,8 +798,9 @@ class original_obj_fcn(pyo.ConcreteModel):
         self.Q_c_values = Q_c_list[n]
         
         self.f_P = 0
-        self.f_V = 0
-        self.f_E = 0
+        self.f_V = []
+        self.f_E = []
+        self.f_max = 0
         self.f_Im = 0
         self.f_REC = 0
         
@@ -813,21 +809,24 @@ class original_obj_fcn(pyo.ConcreteModel):
     def original_obj(self):  
         for t in range(T):
             self.f_P += self.P_da[t]*self.Q_da_values[t]+(self.u_values[t]-self.Q_da_values[t])*self.P_rt[t]
-            self.f_V += max(min(self.u_values[t], self.Q_c_values[t])*self.b_rt_values[t]-(self.Q_da_values[t]*self.P_da[t]+(min(self.u_values[t], self.Q_c_values[t])-self.Q_da_values[t])*self.P_rt[t]), 0)
+            
+            self.f_V.append(min(self.u_values[t], self.Q_c_values[t])*self.b_rt_values[t]-(self.Q_da_values[t]*self.P_da[t]+(min(self.u_values[t], self.Q_c_values[t])-self.Q_da_values[t])*self.P_rt[t])) 
+            
             if self.Q_da_values[t] >= self.Q_c_values[t]:
-                self.f_E += (self.P_rt[t]-self.b_da_values[t])*(min(self.Q_da_values[t], self.q_rt_values[t])-min(max(min(self.u_values[t], self.Q_da_values[t]), self.Q_c_values[t]), self.q_rt_values[t]))
+                self.f_E.append((self.P_rt[t]-self.b_da_values[t])*(min(self.Q_da_values[t], self.q_rt_values[t])-min(max(min(self.u_values[t], self.Q_da_values[t]), self.Q_c_values[t]), self.q_rt_values[t])))
             else:
-                self.f_E += (self.P_rt[t]-self.b_da_values[t])*(min(self.Q_da_values[t], self.q_rt_values[t])-min(max(self.u_values[t], self.Q_da_values[t]), self.Q_c_values[t], self.q_rt_values[t]))
+                self.f_E.append((self.P_rt[t]-self.b_da_values[t])*(min(self.Q_da_values[t], self.q_rt_values[t])-min(max(self.u_values[t], self.Q_da_values[t]), self.Q_c_values[t], self.q_rt_values[t])))
+            
+            self.f_max += max(0, self.f_V[t], self.f_E[t])
+            
             if self.P_da[t] >= 0:
                 self.f_Im += -(self.P_rt[t]-self.b_rt_values[t])*max(self.u_values[t]-self.Q_c_values[t]-0.12*C, 0)
             else:
                 self.f_Im += -(-self.b_rt_values[t])*max(self.u_values[t]-self.Q_c_values[t]-0.12*C, 0)
+            
             self.f_REC += P_r*self.u_values[t]
         
-        self.obj_fcn += self.f_P + max(0, self.f_V, self.f_E) + self.f_Im + self.f_REC
-#                       self.P_da[t] * model.Q_da[t] + self.P_rt[t] * (model.u[t] - model.Q_da[t]) + model.f_max[t] + (- model.m1_Im[t] * model.m2_Im[t]) + model.u[t] * P_r
-        
-        print(self.f_P, self.f_V, self.f_E, self.f_Im, self.f_REC)
+        self.obj_fcn += self.f_P + self.f_max + self.f_Im + self.f_REC        
         
         return self.obj_fcn
     
@@ -846,7 +845,7 @@ def original_obj_fcn(n):
 
 ## Results
 
-r = range(3)
+r = range(14, 15)
 # 모의시장 range(93)
 # 실제시장 range(93, 185)
 #ranged_r = range(len(scenarios)-123)
@@ -870,7 +869,7 @@ c = 0
 ## Det2' optimal solutions
 
 for n in r:
-    det = deterministic_setting_1(n, 0.5*S)
+    det = deterministic_setting_2_prime(n, 0.5*S)
     det.solve()
     det.optimal_solutions()
     b_da_list.append(det.b_da_values)
@@ -882,8 +881,8 @@ for n in r:
     Q_da_list.append(det.Q_da_values)
     Q_c_list.append(det.Q_c_values)
     
-
 """
+
 for n in r:
     plt.plot(Tr, b_da_list[n])
     
@@ -915,6 +914,16 @@ plt.legend()
 plt.show()
 
 for n in r:
+    plt.plot(Tr, q_rt_list[n])
+    
+plt.xlabel('Time')
+plt.ylabel('q_rt values')
+plt.title('q_rt')
+plt.ylim(0, 2000)
+plt.legend()
+plt.show()
+
+for n in r:
     plt.plot(Tr, S_list[n])
     
 plt.xlabel('Time')
@@ -924,8 +933,37 @@ plt.ylim(0, 2000)
 plt.legend()
 plt.show()
 
-"""
+for n in r:
+    plt.plot(Tr, Q_da_list[n])
+    
+plt.xlabel('Time')
+plt.ylabel('Q_da values')
+plt.title('Q_da')
+plt.ylim(0, 2000)
+plt.legend()
+plt.show()
 
+for n in r:
+    plt.plot(Tr, Q_c_list[n])
+    
+plt.xlabel('Time')
+plt.ylabel('Q_c values')
+plt.title('Q_c')
+plt.ylim(0, 2000)
+plt.legend()
+plt.show()
+
+for n in r:
+    plt.plot(Tr, u_list[n])
+    
+plt.xlabel('Time')
+plt.ylabel('u values')
+plt.title('u')
+plt.ylim(0, 2000)
+plt.legend()
+plt.show()
+
+"""
 ## Price Analysis
 """
 avg_day_ahead_prices=[]
@@ -986,10 +1024,11 @@ difference = []
 for n in r:
     d1 = deterministic_setting_1(n, 0.5*S)
     d1_o = d1.objective_value()
-    d2 = original_obj_fcn(n).original_obj()
+    d2_o = original_obj_fcn(n).original_obj()
+    #d2 = deterministic_setting_2_prime(n, 0.5*S)
     d1_obj.append(d1_o)
-    d2_obj.append(d2)
-    difference.append(abs(d1_o-d2))
+    d2_obj.append(d2_o)
+    difference.append(abs(d1_o-d2_o))
 
 plt.plot(r, d1_obj, label='Original')
 plt.plot(r, d2_obj, label='Approximation')
