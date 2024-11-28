@@ -20,7 +20,7 @@ assert SOLVER.available(), f"Solver {solver} is available."
 
 # Day-Ahead price
 
-directory_path_da = '.\모의 실시간시장 가격\하루전'
+directory_path_da = '.\Deterministic_Approach\모의 실시간시장 가격\하루전'
 
 files = os.listdir(directory_path_da)
 csv_files = [file for file in files if file.endswith('.csv')]
@@ -41,7 +41,7 @@ for csv_file in csv_files:
 
 # Real-Time price
 
-directory_path_rt = '.\모의 실시간시장 가격\실시간 임시'
+directory_path_rt = '.\Deterministic_Approach\모의 실시간시장 가격\실시간 임시'
 
 files_rt = os.listdir(directory_path_rt)
 
@@ -64,7 +64,7 @@ for xlsx_file in csv_files_rt:
 
 # E_0
 
-file_path_E_0 = 'jeju_forecast.csv' 
+file_path_E_0 = '.\Deterministic_Approach\jeju_forecast.csv' 
 
 df_E_0 = pd.read_csv(file_path_E_0)
 
@@ -93,8 +93,8 @@ S_min = 168
 S_max = 1512
 P_r = 80
 M_price = 1000
-M_gen = 6000
-M_set = 4*10**5
+M_gen = 5000
+M_set = 50000
 T = 24
 v = 0.95
 
@@ -181,19 +181,19 @@ class deterministic_setting_1(pyo.ConcreteModel):
         model.Q_c = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
         
         # Linearization Real Variables
-        model.m1_V = pyo.Var(model.TIME, bounds=(0, M_gen), domain=pyo.Reals)
-        model.m1_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
-        model.m2_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
-        model.m3_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
-        model.m4_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
-        model.m5_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
-        model.m6_E = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
-        model.m1_Im = pyo.Var(model.TIME, bounds=(-M_gen, M_gen), domain=pyo.Reals)
-        model.m2_Im = pyo.Var(model.TIME, bounds=(-M_price, M_price), domain=pyo.Reals)
-        model.S1_V = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
-        model.S1_E = pyo.Var(model.TIME, bounds=(-M_price, M_price), domain=pyo.Reals)
-        model.S2_E = pyo.Var(model.TIME, bounds=(-M_gen, M_gen), domain=pyo.Reals)
-        model.S1_Im = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.m1_V = pyo.Var(model.TIME, bounds=(-2*M_gen, 2*M_gen), domain=pyo.Reals)
+        model.m1_E = pyo.Var(model.TIME, domain=pyo.Reals)
+        model.m2_E = pyo.Var(model.TIME, domain=pyo.Reals)
+        model.m3_E = pyo.Var(model.TIME, domain=pyo.Reals)
+        model.m4_E = pyo.Var(model.TIME, domain=pyo.Reals)
+        model.m5_E = pyo.Var(model.TIME, domain=pyo.Reals)
+        model.m6_E = pyo.Var(model.TIME, domain=pyo.Reals)
+        model.m1_Im = pyo.Var(model.TIME, bounds=(-2*M_gen, 2*M_gen), domain=pyo.Reals)
+        model.m2_Im = pyo.Var(model.TIME, bounds=(-2*M_price, 2*M_price), domain=pyo.Reals)
+        model.S1_V = pyo.Var(model.TIME, domain=pyo.Reals)
+        model.S1_E = pyo.Var(model.TIME, bounds=(-2*M_price, 2*M_price), domain=pyo.Reals)
+        model.S2_E = pyo.Var(model.TIME, bounds=(-2*M_gen, 2*M_gen), domain=pyo.Reals)
+        model.S1_Im = pyo.Var(model.TIME, domain=pyo.Reals)
 
         # Linearization Binary Variables
         model.n1_V = pyo.Var(model.TIME, domain=pyo.Binary)
@@ -879,15 +879,15 @@ class deterministic_setting_4(pyo.ConcreteModel):
         model.Q_c = pyo.Var(model.TIME, domain=pyo.NonNegativeReals)
         
         # Linearization Real Variables
-        model.m1_V = pyo.Var(model.TIME, bounds=(-M_set, M_set),domain=pyo.Reals)
-        model.m1_E = pyo.Var(model.TIME, bounds=(-M_set, M_set),domain=pyo.Reals)
-        model.m4_E = pyo.Var(model.TIME, bounds=(-M_set, M_set),domain=pyo.Reals)
+        model.m1_V = pyo.Var(model.TIME, bounds=(-M_gen, M_gen),domain=pyo.Reals)
+        model.m1_E = pyo.Var(model.TIME, domain=pyo.Reals)
+        model.m4_E = pyo.Var(model.TIME, domain=pyo.Reals)
         model.m1_Im = pyo.Var(model.TIME, bounds=(-M_gen, M_gen), domain=pyo.Reals)
         model.m2_Im = pyo.Var(model.TIME, bounds=(-M_price, M_price), domain=pyo.Reals)
-        model.S1_V = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.S1_V = pyo.Var(model.TIME, domain=pyo.Reals)
         model.S1_E = pyo.Var(model.TIME, bounds=(-M_price, M_price), domain=pyo.Reals)
         model.S2_E = pyo.Var(model.TIME, bounds=(-M_gen, M_gen), domain=pyo.Reals)
-        model.S1_Im = pyo.Var(model.TIME, bounds=(-M_set, M_set), domain=pyo.Reals)
+        model.S1_Im = pyo.Var(model.TIME, domain=pyo.Reals)
 
         # Linearization Binary Variables
         model.n1_V = pyo.Var(model.TIME, domain=pyo.Binary)
@@ -1365,9 +1365,8 @@ class original_obj_fcn_prime():
 
 ## Results
 
-k=147
-
-r=range(k, k+9)
+k=0
+r=range(k, k+25)
 
 # 모의시장 range(93)
 # 실제시장 range(93, 185)
@@ -1392,7 +1391,7 @@ c = 0
 ## Det2' optimal solutions
 
 for n in r:
-    det = deterministic_setting_4(n, 0.5*S)
+    det = deterministic_setting_2(n, 0.5*S)
     det.solve()
     det.optimal_solutions()
     b_da_list.append(det.b_da_values)
@@ -1542,7 +1541,7 @@ d1_obj = []
 d2_obj = []
 difference = []
 
-
+"""
 for n in r:
     d1 = deterministic_setting_1(n, 0.5*S)
     d1_o = d1.objective_value()
@@ -1563,7 +1562,7 @@ plt.title('Comparison of Deterministic Settings')
 plt.ylim(0, 2000000)
 plt.legend()
 plt.show()
-
+"""
 
 # Optimal Initial SoC value
 
