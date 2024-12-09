@@ -3,8 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import warnings
-from scipy.stats import truncnorm
-from sklearn.linear_model import LinearRegression
+from scipy.stats import bernoulli, truncnorm
 from sklearn.cluster import KMeans
 
 
@@ -91,11 +90,12 @@ delta_values = filtered_df_Energy['delta']
 
 std_E = delta_values.std()  
 
-lower_E, upper_E = 0, 2
+lower_E, upper_E = 0.7, 1.3
 
 a_E, b_E = (lower_E - 1) / std_E, (upper_E - 1) / std_E
 
 Energy_dist = truncnorm(a_E, b_E, loc=1, scale=std_E)
+
 
 # Q_c distribution
 
@@ -105,7 +105,21 @@ lower_c, upper_c = -1, 1
 
 a_c, b_c = (lower_c) / std_c, (upper_c) / std_c
 
-Q_c_dist = truncnorm(a_c, b_c, loc=0, scale=std_c)
+Q_c_truncnorm_dist = truncnorm(a_c, b_c, loc=0, scale=std_c)
+
+p = 0.05
+
+def f_X(x):
+    if x == 0:
+        return 0.95  
+    elif lower_c <= x <= upper_c:
+        return p * Q_c_truncnorm_dist.pdf(x)
+    else:
+        return 0 
+
+Q_c_x_values = np.linspace(-1.5, 1.5, 500)  
+Q_c_f_X_values = np.array([f_X(x) for x in Q_c_x_values])
+
 
 # Price Distributions
 
@@ -319,7 +333,7 @@ def train_conditional_tgmm(data, conditioning_var, target_var, bin_edges, K=3, m
                 'means': means,
                 'stds': stds
             }
-            plot_tgmm(subset, weights, means, stds, LB_price, UB_price, title=f'TGMM Fit for {conditioning_var} in {bin_interval}')
+            ##plot_tgmm(subset, weights, means, stds, LB_price, UB_price, title=f'TGMM Fit for {conditioning_var} in {bin_interval}')
         except Exception as e:
             print(f'Failed to train TGMM for bin {bin_interval}: {e}')
     
@@ -329,11 +343,11 @@ def train_conditional_tgmm(data, conditioning_var, target_var, bin_edges, K=3, m
 
 print("Inspecting bins for Model 1: day_ahead_price | E_0_value")
 inspect_bins(data, 'E_0_value', 'day_ahead_price', num_bins)
-plot_histogram(data, 'day_ahead_price', LB_price, UB_price)
+##plot_histogram(data, 'day_ahead_price', LB_price, UB_price)
 
 print("\nInspecting bins for Model 2: real_time_price | day_ahead_price")
 inspect_bins(data, 'day_ahead_price', 'real_time_price', num_bins)
-plot_histogram(data, 'real_time_price', LB_price, UB_price)
+##plot_histogram(data, 'real_time_price', LB_price, UB_price)
 
 print("\nTraining Model 1: day_ahead_price | E_0_value")
 tgmm_model1_params, model1_bin_edges = train_conditional_tgmm(
@@ -385,7 +399,7 @@ def sample_day_ahead_price(E0_value, tgmm_params, bin_edges, num_samples=1):
 new_E0_value = 2000 
 
 try:
-    sampled_day_ahead = sample_day_ahead_price(new_E0_value, tgmm_model1_params, model1_bin_edges, num_samples=5)
+    sampled_day_ahead = sample_day_ahead_price(new_E0_value, tgmm_model1_params, model1_bin_edges, num_samples=100)
     print(f'\nSampled day_ahead_price values for E0_value={new_E0_value}:')
     print(sampled_day_ahead)
 except ValueError as e:
@@ -406,8 +420,9 @@ def sample_real_time_price(DA_price, tgmm_params, bin_edges, num_samples=1):
     return samples
 
 new_DA_price = -70  
+
 try:
-    sampled_real_time = sample_real_time_price(new_DA_price, tgmm_model2_params, model2_bin_edges, num_samples=5)
+    sampled_real_time = sample_real_time_price(new_DA_price, tgmm_model2_params, model2_bin_edges, num_samples=1000)
     print(f'\nSampled real_time_price values for day_ahead_price={new_DA_price}:')
     print(sampled_real_time)
 except ValueError as e:
@@ -415,11 +430,14 @@ except ValueError as e:
     
 # plotting distributions
 
-x_E = np.linspace(lower_E, upper_E, 1000)
-y_E = Energy_dist.pdf(x_E)
+## P_da
+"""
+x_P_da = np.linspace(LB_price, UB_price, 1000)
+y_P_da = sampled_day_ahead
+
 
 plt.figure(figsize=(10, 6))
-plt.plot(x_E, y_E, label='Truncated Normal Distribution (delta_E)')
+plt.plot(x_P_da, y_P_da, label='Truncated Normal Distribution (delta_E)')
 plt.title('Truncated Normal Distribution Fit to Delta Values')
 plt.xlabel('Delta')
 plt.ylabel('Density')
@@ -427,15 +445,45 @@ plt.legend()
 plt.grid(True)
 plt.show()
 
-x_c = np.linspace(lower_c, upper_c, 1000)
-y_c = Q_c_dist.pdf(x_c)
+## P_rt
+
+x_P_rt = np.linspace(LB_price, UB_price, 1000)
+y_P_rt = sampled_real_time
 
 plt.figure(figsize=(10, 6))
-plt.plot(x_c, y_c, label='Truncated Normal Distribution (delta_c)')
+plt.plot(x_P_rt, y_P_rt, label='Truncated Normal Distribution (delta_E)')
 plt.title('Truncated Normal Distribution Fit to Delta Values')
 plt.xlabel('Delta')
 plt.ylabel('Density')
 plt.legend()
 plt.grid(True)
 plt.show()
+"""
+## Energy forecast
 
+if __name__ == '__main__':
+    x_E = np.linspace(lower_E, upper_E, 1000)
+    y_E = Energy_dist.pdf(x_E)
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(x_E, y_E, label='Truncated Normal Distribution (delta_E)')
+    plt.title('Truncated Normal Distribution Fit to Delta Values')
+    plt.xlabel('Delta')
+    plt.ylabel('Density')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    ## Q_c
+
+    x_c = np.linspace(lower_c, upper_c, 1000)
+    y_c = Q_c_truncnorm_dist.pdf(x_c)
+
+    plt.plot(Q_c_x_values, Q_c_f_X_values, label="PDF of X")
+    plt.axvline(0, color='r', linestyle='--', label="Probability mass at X=0")
+    plt.title("PDF of X = Q_c")
+    plt.xlabel("x")
+    plt.ylabel("f_X(x)")
+    plt.legend()
+    plt.grid()
+    plt.show()
