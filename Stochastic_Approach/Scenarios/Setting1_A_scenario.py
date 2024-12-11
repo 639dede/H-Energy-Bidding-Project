@@ -22,7 +22,14 @@ df = pd.read_csv(file_path_Energy)
 
 filtered_df_Energy = df[(df['forecast_da'] > 0) & (df['forecast_rt'] > 0)]
 
+
+timestamps = pd.date_range(start="2024-01-01 00:00", end="2024-09-24 23:00", freq='H')
 E_0_values = df['forecast_da'].tolist()
+forecast_data = pd.DataFrame({'timestamp': timestamps, 'value': E_0_values})
+
+forecast_data['hour'] = forecast_data['timestamp'].dt.hour
+
+E_0 = forecast_data.groupby('hour')['value'].mean().tolist()
 
 ## Day-Ahead price
 
@@ -395,7 +402,7 @@ def sample_day_ahead_price(E0_value, tgmm_params, bin_edges, num_samples=1):
             raise ValueError(f"No TGMM parameters found for the bin: {bin_interval}.")
     samples = sample_from_tgmm(params['weights'], params['means'], params['stds'], LB_price, UB_price, num_samples)
     return samples
-
+"""
 new_E0_value = 2000 
 
 try:
@@ -404,6 +411,7 @@ try:
     print(sampled_day_ahead)
 except ValueError as e:
     print(e)
+"""
 
 def sample_real_time_price(DA_price, tgmm_params, bin_edges, num_samples=1):
 
@@ -419,46 +427,20 @@ def sample_real_time_price(DA_price, tgmm_params, bin_edges, num_samples=1):
     samples = sample_from_tgmm(params['weights'], params['means'], params['stds'], LB_price, UB_price, num_samples)
     return samples
 
+"""
 new_DA_price = -70  
 
 try:
-    sampled_real_time = sample_real_time_price(new_DA_price, tgmm_model2_params, model2_bin_edges, num_samples=1000)
+    sampled_real_time = sample_real_time_price(new_DA_price, tgmm_model2_params, model2_bin_edges, num_samples=100)
     print(f'\nSampled real_time_price values for day_ahead_price={new_DA_price}:')
     print(sampled_real_time)
 except ValueError as e:
     print(e)
-    
+
+"""
+
 # plotting distributions
 
-## P_da
-"""
-x_P_da = np.linspace(LB_price, UB_price, 1000)
-y_P_da = sampled_day_ahead
-
-
-plt.figure(figsize=(10, 6))
-plt.plot(x_P_da, y_P_da, label='Truncated Normal Distribution (delta_E)')
-plt.title('Truncated Normal Distribution Fit to Delta Values')
-plt.xlabel('Delta')
-plt.ylabel('Density')
-plt.legend()
-plt.grid(True)
-plt.show()
-
-## P_rt
-
-x_P_rt = np.linspace(LB_price, UB_price, 1000)
-y_P_rt = sampled_real_time
-
-plt.figure(figsize=(10, 6))
-plt.plot(x_P_rt, y_P_rt, label='Truncated Normal Distribution (delta_E)')
-plt.title('Truncated Normal Distribution Fit to Delta Values')
-plt.xlabel('Delta')
-plt.ylabel('Density')
-plt.legend()
-plt.grid(True)
-plt.show()
-"""
 ## Energy forecast
 
 if __name__ == '__main__':
@@ -487,3 +469,74 @@ if __name__ == '__main__':
     plt.legend()
     plt.grid()
     plt.show()
+
+
+# Generate Scenario
+
+class Setting1_A_scenario():
+    def __init__(self, n, E_0):
+        self.n = n
+        self.E_0 = E_0
+        self.T = 24
+        self.P_da = []
+        self.delta_E = []
+        self.Q_c = []
+        self.P_rt = []
+        self.delta = []
+        
+    def Expected_P_da(self):
+        P_da = []
+        for E_0_value in self.E_0:
+            sampled_day_ahead = sample_day_ahead_price(E_0_value, tgmm_model1_params, model1_bin_edges, num_samples=100)
+            P_da.append(sum(sampled_day_ahead)/len(sampled_day_ahead))
+        return P_da
+    
+    def sample_delta_E(self):
+        delta_samples = Energy_dist.rvs(self.T)
+        return delta_samples.tolist()
+    
+    def sample_Q_c(self):
+        Q_c_samples = []
+        for _ in range(self.T):
+            if np.random.rand() < 0.95:
+                Q_c_samples.append(0)
+            else:
+                Q_c_sample = Q_c_truncnorm_dist.rvs()
+                Q_c_samples.append(Q_c_sample)
+        return Q_c_samples
+    
+    def sample_P_rt(self):
+        P_rt_samples = []
+        self.P_da = self.Expected_P_da()
+        for t in range(self.T):
+            P_da_value = self.P_da[t]
+            try:
+                sampled_rt = sample_real_time_price(
+                    P_da_value, tgmm_model2_params, model2_bin_edges, num_samples=1
+                )
+                P_rt_samples.append(sampled_rt[0])
+            except ValueError as e:
+                print(f"Error sampling P_rt for t={t}: {e}")
+                P_rt_samples.append(np.nan) 
+        return P_rt_samples    
+    
+    
+    def scenario(self):
+        self.delta_E = self.sample_delta_E()
+        self.Q_c = self.sample_Q_c()
+        self.P_rt = self.sample_P_rt()
+        
+        for t in range(self.T+1):
+            if t == 0:
+                self.delta.append([self.delta_E[t], 0, 0])
+            elif t >= 1 and t<= 23:
+                self.delta.append([self.delta_E[t], self.P_rt[t-1], self.Q_c[t-1]])
+            else : 
+                self.delta.append([0, self.P_rt[t-1], self.Q_c[t-1]])
+        
+        return self.delta
+        
+x = Setting1_A_scenario(1, E_0)
+
+print(x.Expected_P_da())
+print(x.scenario())
