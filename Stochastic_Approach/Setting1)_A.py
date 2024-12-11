@@ -12,15 +12,7 @@ sys.path.append(scenarios_path)
 
 from Scenarios import Setting1_A_scenario
 
-Energy_dist = Setting1_A_scenario.Energy_dist
-Q_c_truncnorm_dist = Setting1_A_scenario.Q_c_truncnorm_dist
-Q_c_x_values = Setting1_A_scenario.Q_c_x_values
-Q_c_f_X_values = Setting1_A_scenario.Q_c_f_X_values
-lower_E = Setting1_A_scenario.lower_E
-upper_E = Setting1_A_scenario.upper_E
-lower_c = Setting1_A_scenario.lower_c
-upper_c = Setting1_A_scenario.upper_c
-
+E_0 = Setting1_A_scenario.E_0
 
 solver='gurobi'
 SOLVER=pyo.SolverFactory(solver)
@@ -29,8 +21,11 @@ assert SOLVER.available(), f"Solver {solver} is available."
 
 # Generate Scenario
 
-scenario_test = Setting1_A_scenario.Setting1_A_scenario(1)
+scenario_test = Setting1_A_scenario.Setting1_A_scenario(1, E_0)
 
-print("Hello")
+
+if __name__ == '__main__':
+    print(scenario_test.Expected_P_da())
+    print(scenario_test.scenario())
 
     
