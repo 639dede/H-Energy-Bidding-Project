@@ -25,7 +25,7 @@ scenario_test = Setting1_A_scenario.Setting1_A_scenario(1, E_0)
 
 
 if __name__ == '__main__':
-    print(scenario_test.Expected_P_da())
+    print(scenario_test.P_da)
     print(scenario_test.scenario())
 
     
